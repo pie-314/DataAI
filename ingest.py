@@ -1,6 +1,5 @@
 """
-Data ingestion pipeline for candidate embeddings.
-Reads candidate data, generates embeddings, and saves for search/analysis.
+Ingest candidates and jobs data, clean it, generate embeddings.
 """
 
 import pickle
@@ -10,75 +9,64 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 
 
-def load_and_clean_candidates(csv_path: str) -> list[str]:
-    """
-    Load candidates from CSV and clean text.
-    
-    Args:
-        csv_path: Path to candidates CSV file
-        
-    Returns:
-        List of cleaned candidate text strings
-    """
-    df = pd.read_csv(csv_path)
-    
-    # Extract first column, replace NaN with empty strings
-    candidates = df.iloc[:, 0].fillna("").astype(str).tolist()
-    
-    # Strip excessive newlines and normalize whitespace
-    candidates = [
-        re.sub(r'\n{2,}', '\n', text).strip()
-        for text in candidates
-    ]
-    
-    return candidates
+def clean_text(text):
+    """Remove excessive newlines and normalize whitespace."""
+    text = str(text) if text else ""
+    text = re.sub(r'\n{2,}', '\n', text).strip()
+    return text
 
 
-def generate_embeddings(texts: list[str], model_name: str = "all-MiniLM-L6-v2") -> np.ndarray:
-    """
-    Generate embeddings for text list using SentenceTransformer.
-    
-    Args:
-        texts: List of text strings to embed
-        model_name: SentenceTransformer model identifier
-        
-    Returns:
-        NumPy array of embeddings (n_samples, embedding_dim)
-    """
-    model = SentenceTransformer(model_name)
+def load_and_clean(csv_file):
+    """Load CSV and clean first column."""
+    df = pd.read_csv(csv_file)
+    texts = df.iloc[:, 0].fillna("").astype(str).tolist()
+    texts = [clean_text(text) for text in texts]
+    return texts
+
+
+def generate_embeddings(texts):
+    """Convert texts to embeddings using all-MiniLM-L6-v2."""
+    print(f"Generating embeddings for {len(texts)} items...")
+    model = SentenceTransformer("all-MiniLM-L6-v2")
     embeddings = model.encode(texts, show_progress_bar=True)
     return np.array(embeddings)
 
 
-def save_artifacts(candidates: list[str], embeddings: np.ndarray) -> None:
-    """
-    Save candidates and embeddings to disk.
+def save_data(texts, embeddings, prefix):
+    """Save texts and embeddings to disk."""
+    pkl_file = f"{prefix}.pkl"
+    npy_file = f"{prefix}_embeddings.npy"
     
-    Args:
-        candidates: List of candidate text strings
-        embeddings: NumPy array of embeddings
-    """
-    with open("candidates.pkl", "wb") as f:
-        pickle.dump(candidates, f)
+    with open(pkl_file, "wb") as f:
+        pickle.dump(texts, f)
+    np.save(npy_file, embeddings)
     
-    np.save("embeddings.npy", embeddings)
-    print(f"Saved {len(candidates)} candidates and embeddings")
+    print(f"✓ Saved {len(texts)} items to {pkl_file} and {npy_file}")
 
 
-def main() -> None:
-    """Main ingestion pipeline."""
-    print("Loading candidates...")
-    candidates = load_and_clean_candidates("candidates.csv")
-    print(f"Loaded {len(candidates)} candidates")
+def ingest_candidates():
+    """Load, clean, embed candidates."""
+    print("\n=== Candidates ===")
+    print("Loading candidates.csv...")
+    texts = load_and_clean("candidates.csv")
+    print(f"Loaded {len(texts)} candidates")
     
-    print("Generating embeddings...")
-    embeddings = generate_embeddings(candidates)
-    print(f"Generated embeddings with shape {embeddings.shape}")
+    embeddings = generate_embeddings(texts)
+    save_data(texts, embeddings, "candidates")
+
+
+def ingest_jobs():
+    """Load, clean, embed jobs."""
+    print("\n=== Jobs ===")
+    print("Loading jobs.csv...")
+    texts = load_and_clean("jobs.csv")
+    print(f"Loaded {len(texts)} jobs")
     
-    print("Saving artifacts...")
-    save_artifacts(candidates, embeddings)
-    print("Done!")
+    embeddings = generate_embeddings(texts)
+    save_data(texts, embeddings, "jobs")
 
 
 if __name__ == "__main__":
-    main()
+    ingest_candidates()
+    ingest_jobs()
+    print("\n✓ All data ingested and embedded!")
