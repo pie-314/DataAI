@@ -42,13 +42,13 @@ Raw similarity scores (0.75, 0.82, etc.) are difficult to interpret. By augmenti
 ```mermaid
 graph TD
     A["candidates.csv<br/>(raw, messy)"] -->|pandas: clean & normalize| B["candidate texts<br/>(list[str])"]
-    B -->|sentence-transformers<br/>all-MiniLM-L6-v2| C["embeddings<br/>(2000 × 384)"]
+    B -->|sentence-transformers<br/>all-MiniLM-L6-v2| C["embeddings<br/>(2000 x 384)"]
     C -->|save to disk| D["embeddings.npy<br/>candidates.pkl"]
     
     D -->|load on startup| E["In-Memory Vector Store"]
     
-    F["User Query<br/>(natural language)"] -->|encode with same model| G["query embedding<br/>(1 × 384)"]
-    G -->|cosine_similarity O(n)| H["similarities<br/>(1 × 2000)"]
+    F["User Query<br/>(natural language)"] -->|encode with same model| G["query embedding<br/>(1 x 384)"]
+    G -->|cosine similarity| H["similarities<br/>(1 x 2000)"]
     H -->|argmax top_k| I["top 20 candidates<br/>(indices + scores)"]
     
     I -->|for each result| J["Groq LLM API<br/>llama-3.1-8b-instant"]
