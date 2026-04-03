@@ -130,7 +130,7 @@ class CandidateSearch:
                 continue
             
             self.console.print("\n[bold]Searching...[/bold]")
-            results = self.vector_search(query, top_k=20)
+            results = self.vector_search(query, top_k=5)
             
             self.console.print(f"\n[bold cyan]Found {len(results)} candidates[/bold cyan]\n")
             
