@@ -85,33 +85,30 @@ class CandidateSearch:
     def generate_explanation(self, query: str, candidate_text: str) -> str:
         """
         Generate LLM explanation for why candidate matches query.
-        
-        Args:
-            query: User's search query
-            candidate_text: Candidate profile text
-            
-        Returns:
-            LLM-generated explanation
         """
-        response = self.llm_client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are an expert technical recruiter. Be concise."
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Query: {query}. Candidate profile: {candidate_text}. "
-                        "Provide a 1-sentence explanation of why they are a match, "
-                        "and point out 1 thing they might be missing."
-                    )
-                }
-            ]
-        )
-        return response.choices[0].message.content
-    
+        try:
+            response = self.llm_client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert technical recruiter. Be concise."
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Query: {query}. Candidate profile: {candidate_text}. "
+                            "Provide a 1-sentence explanation of why they are a match, "
+                            "and point out 1 thing they might be missing."
+                        )
+                    }
+                ]
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            # Fallback if the API fails, preventing a crash!
+            return f"High semantic match via vector space. [LLM generation failed: {str(e)}]"
+   
     def run_interactive_search(self) -> None:
         """Run interactive CLI search loop."""
         self.console.print(
